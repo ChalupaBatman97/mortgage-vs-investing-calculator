@@ -5,392 +5,414 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mortgage vs Investment Calculator</title>
     
-    <!-- Load required libraries from CDN -->
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.2/Recharts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+    <!-- Load React -->
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Recharts -->
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     
+    <!-- Load Babel -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
     <style>
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            .print-only {
-                display: block !important;
-            }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-        
-        .card {
-            background: white;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
-            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
         .input-group {
-            margin-bottom: 1rem;
+            margin-bottom: 15px;
         }
-        
         .input-group label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
-        
         .input-group input {
             width: 100%;
-            padding: 0.5rem;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        
-        .btn {
-            background-color: #4F46E5;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
-        
-        .btn:hover {
-            background-color: #4338CA;
-        }
-        
-        .stats-card {
-            background-color: #F3F4F6;
-            padding: 1rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        th {
-            background-color: #F3F4F6;
-        }
-        
-        .comparison-table {
-            margin-top: 1rem;
-        }
-        
         @media (max-width: 768px) {
-            .grid-cols-2 {
+            .grid {
                 grid-template-columns: 1fr;
             }
         }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .stats-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: right;
+        }
+        .comparison-table th {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body>
     <div id="root"></div>
-
+    
     <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
-        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+const { useState, useEffect, useCallback } = React;
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
 
-        function FinancialCalculator() {
-            // State management for form data
-            const [formData, setFormData] = useState({
-                mortgageAmount: 529200,
-                mortgageRate: 6.26,
-                mortgageTerm: 30,
-                mortgageStartDate: '2024-09-19',
-                investmentRate: 10,
-                weeklyInvestment: 500,
-                extraMortgagePayment: 0,
-                currentInvestments: 25000,
-                pieTaxRate: 28
+function FinancialCalculator() {
+    // State management
+    const [formData, setFormData] = useState({
+        mortgageAmount: 529200,
+        mortgageRate: 6.26,
+        mortgageTerm: 30,
+        mortgageStartDate: '2024-09-19',
+        investmentRate: 10,
+        weeklyInvestment: 500,
+        extraMortgagePayment: 0,
+        currentInvestments: 25000,
+        pieTaxRate: 28
+    });
+
+    const [savedScenarios, setSavedScenarios] = useState([]);
+    const [showTable, setShowTable] = useState(false);
+    const [chartData, setChartData] = useState([]);
+
+    // Calculation functions
+    const calculateMinWeeklyPayment = useCallback(() => {
+        const monthlyRate = formData.mortgageRate / 100 / 12;
+        const numberOfPayments = formData.mortgageTerm * 12;
+        const monthlyPayment = formData.mortgageAmount * 
+            (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / 
+            (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+        return (monthlyPayment * 12 / 52).toFixed(2);
+    }, [formData]);
+
+    const getAfterTaxRate = useCallback((rate) => {
+        return rate * (1 - formData.pieTaxRate / 100);
+    }, [formData.pieTaxRate]);
+
+
+        // Calculate chart data
+    const calculateData = useCallback(() => {
+        const data = [];
+        let mortgageBalanceBase = formData.mortgageAmount;
+        let mortgageBalanceExtra = formData.mortgageAmount;
+        let investmentBalance = formData.currentInvestments;
+        const weeklyRate = formData.mortgageRate / 100 / 52;
+        const minWeeklyPayment = parseFloat(calculateMinWeeklyPayment());
+        const afterTaxAnnualRate = getAfterTaxRate(formData.investmentRate);
+        
+        for (let year = 0; year <= formData.mortgageTerm; year++) {
+            // Base mortgage calculation
+            for (let week = 0; week < 52; week++) {
+                const interestThisWeek = mortgageBalanceBase * weeklyRate;
+                mortgageBalanceBase = Math.max(0, mortgageBalanceBase - minWeeklyPayment + interestThisWeek);
+            }
+            
+            // Extra payment mortgage calculation
+            for (let week = 0; week < 52; week++) {
+                const interestThisWeek = mortgageBalanceExtra * weeklyRate;
+                mortgageBalanceExtra = Math.max(0, mortgageBalanceExtra - (minWeeklyPayment + parseFloat(formData.extraMortgagePayment)) + interestThisWeek);
+            }
+
+            // Investment calculation
+            const yearlyInvestment = formData.weeklyInvestment * 52;
+            investmentBalance = (investmentBalance * (1 + afterTaxAnnualRate / 100)) + yearlyInvestment;
+
+            data.push({
+                year,
+                baseMortgage: Math.round(mortgageBalanceBase),
+                extraMortgage: Math.round(mortgageBalanceExtra),
+                investments: Math.round(investmentBalance),
             });
+        }
+        return data;
+    }, [formData, calculateMinWeeklyPayment, getAfterTaxRate]);
 
-            const [savedScenarios, setSavedScenarios] = useState([]);
-            const [showTable, setShowTable] = useState(false);
-            const [chartData, setChartData] = useState([]);
-
-            // Calculate minimum weekly payment
-            const calculateMinWeeklyPayment = useCallback(() => {
-                const monthlyRate = formData.mortgageRate / 100 / 12;
-                const numberOfPayments = formData.mortgageTerm * 12;
-                const monthlyPayment = formData.mortgageAmount * 
-                    (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / 
-                    (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
-                return (monthlyPayment * 12 / 52).toFixed(2);
-            }, [formData]);
-
-            // Calculate after-tax investment rate
-            const getAfterTaxRate = useCallback((rate) => {
-                return rate * (1 - formData.pieTaxRate / 100);
-            }, [formData.pieTaxRate]);
-
-            // Calculate chart data
-            const calculateData = useCallback(() => {
-                const data = [];
-                let mortgageBalanceBase = formData.mortgageAmount;
-                let mortgageBalanceExtra = formData.mortgageAmount;
-                let investmentBalance = formData.currentInvestments;
-                const weeklyRate = formData.mortgageRate / 100 / 52;
-                const minWeeklyPayment = parseFloat(calculateMinWeeklyPayment());
-                const afterTaxAnnualRate = getAfterTaxRate(formData.investmentRate);
-                
-                for (let year = 0; year <= formData.mortgageTerm; year++) {
-                    // Base mortgage calculation
-                    for (let week = 0; week < 52; week++) {
-                        const interestThisWeek = mortgageBalanceBase * weeklyRate;
-                        mortgageBalanceBase = Math.max(0, mortgageBalanceBase - minWeeklyPayment + interestThisWeek);
-                    }
-                    
-                    // Extra payment mortgage calculation
-                    for (let week = 0; week < 52; week++) {
-                        const interestThisWeek = mortgageBalanceExtra * weeklyRate;
-                        mortgageBalanceExtra = Math.max(0, mortgageBalanceExtra - (minWeeklyPayment + parseFloat(formData.extraMortgagePayment)) + interestThisWeek);
-                    }
-
-                    // Investment calculation
-                    const yearlyInvestment = formData.weeklyInvestment * 52;
-                    investmentBalance = (investmentBalance * (1 + afterTaxAnnualRate / 100)) + yearlyInvestment;
-
-                    data.push({
-                        year,
-                        baseMortgage: Math.round(mortgageBalanceBase),
-                        extraMortgage: Math.round(mortgageBalanceExtra),
-                        investments: Math.round(investmentBalance),
-                    });
-                }
-                return data;
-            }, [formData, calculateMinWeeklyPayment, getAfterTaxRate]);
-
-            // Save current scenario
-            const saveScenario = () => {
-                const name = prompt("Name this scenario:");
-                if (name) {
-                    const newScenario = {
-                        name,
-                        data: { ...formData },
-                        timestamp: new Date().toISOString()
-                    };
-                    const updatedScenarios = [...savedScenarios, newScenario];
-                    setSavedScenarios(updatedScenarios);
-                    localStorage.setItem('savedScenarios', JSON.stringify(updatedScenarios));
-                }
+    // Save scenario function
+    const saveScenario = () => {
+        const name = prompt("Name this scenario:");
+        if (name) {
+            const newScenario = {
+                name,
+                data: { ...formData },
+                timestamp: new Date().toISOString()
             };
+            const updatedScenarios = [...savedScenarios, newScenario];
+            setSavedScenarios(updatedScenarios);
+            localStorage.setItem('savedScenarios', JSON.stringify(updatedScenarios));
+        }
+    };
 
-            // Load scenario
-            const loadScenario = (scenario) => {
-                setFormData(scenario.data);
-            };
+    // Load scenario function
+    const loadScenario = (scenario) => {
+        setFormData(scenario.data);
+    };
 
-            // Export current scenario
-            const exportScenario = () => {
-                const dataStr = JSON.stringify(formData);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                const exportFileDefaultName = 'mortgage-scenario.json';
+    // Handle form changes
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: parseFloat(value) || value
+        }));
+    };
 
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
-            };
+    // Update chart data when form data changes
+    useEffect(() => {
+        setChartData(calculateData());
+        const saved = localStorage.getItem('savedScenarios');
+        if (saved) {
+            setSavedScenarios(JSON.parse(saved));
+        }
+    }, [formData, calculateData]);
 
-            // Import scenario
-            const handleImport = (event) => {
-                const file = event.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        setFormData(data);
-                    } catch (error) {
-                        alert('Invalid file format');
-                    }
-                };
-                reader.readAsText(file);
-            };
 
-            // Update chart data when form data changes
-            useEffect(() => {
-                setChartData(calculateData());
-                
-                // Load saved scenarios from localStorage
-                const saved = localStorage.getItem('savedScenarios');
-                if (saved) {
-                    setSavedScenarios(JSON.parse(saved));
-                }
-            }, [formData, calculateData]);
+  return (
+        <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <h1 style={{ margin: 0 }}>Mortgage vs Investment Calculator</h1>
+                <div>
+                    <button className="button" onClick={saveScenario}>Save Scenario</button>
+                </div>
+            </div>
 
-            // Handle form input changes
-            const handleInputChange = (e) => {
-                const { name, value } = e.target;
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: parseFloat(value) || value
-                }));
-            };
+            <div className="grid">
+                <div>
+                    <h2>Mortgage Details</h2>
+                    <div className="input-group">
+                        <label>Initial Mortgage Amount (NZD)</label>
+                        <input
+                            type="number"
+                            name="mortgageAmount"
+                            value={formData.mortgageAmount}
+                            onChange={handleInputChange}
+                        />
+                    </div>
 
-            return (
-                <div className="max-w-7xl mx-auto p-4">
-                    <div className="card">
-                        <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-2xl font-bold">Mortgage vs Investment Calculator</h1>
-                            <div className="space-x-2">
-                                <button className="btn" onClick={saveScenario}>Save Scenario</button>
-                                <button className="btn" onClick={exportScenario}>Export</button>
-                                <button className="btn" onClick={() => document.getElementById('import').click()}>
-                                    Import
-                                </button>
-                                <input
-                                    id="import"
-                                    type="file"
-                                    accept=".json"
-                                    className="hidden"
-                                    onChange={handleImport}
-                                />
-                                <button className="btn" onClick={() => window.print()}>Print</button>
-                            </div>
+                    <div className="input-group">
+                        <label>Mortgage Start Date</label>
+                        <input
+                            type="date"
+                            name="mortgageStartDate"
+                            value={formData.mortgageStartDate}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Average Mortgage Rate (%)</label>
+                        <input
+                            type="number"
+                            name="mortgageRate"
+                            value={formData.mortgageRate}
+                            onChange={handleInputChange}
+                            step="0.01"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Mortgage Term (Years)</label>
+                        <input
+                            type="number"
+                            name="mortgageTerm"
+                            value={formData.mortgageTerm}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Extra Weekly Mortgage Payment (NZD)</label>
+                        <input
+                            type="number"
+                            name="extraMortgagePayment"
+                            value={formData.extraMortgagePayment}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <h2>Investment Details</h2>
+                    <div className="input-group">
+                        <label>Current Index Fund Value (NZD)</label>
+                        <input
+                            type="number"
+                            name="currentInvestments"
+                            value={formData.currentInvestments}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+<div className="input-group">
+                        <label>Expected Index Fund Return Rate (%)</label>
+                        <input
+                            type="number"
+                            name="investmentRate"
+                            value={formData.investmentRate}
+                            onChange={handleInputChange}
+                            step="0.1"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>PIE Tax Rate (%)</label>
+                        <input
+                            type="number"
+                            name="pieTaxRate"
+                            value={formData.pieTaxRate}
+                            onChange={handleInputChange}
+                            step="0.1"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Weekly Index Fund Investment (NZD)</label>
+                        <input
+                            type="number"
+                            name="weeklyInvestment"
+                            value={formData.weeklyInvestment}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    {savedScenarios.length > 0 && (
+                        <div className="stats-card">
+                            <h3>Saved Scenarios</h3>
+                            {savedScenarios.map((scenario, index) => (
+                                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                    <span>{scenario.name}</span>
+                                    <button className="button" onClick={() => loadScenario(scenario)}>
+                                        Load
+                                    </button>
+                                </div>
+                            ))}
                         </div>
+                    )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <h2 className="text-xl font-bold">Mortgage Details</h2>
-                                
-                                <div className="input-group">
-                                    <label>Initial Mortgage Amount (NZD)</label>
-                                    <input
-                                        type="number"
-                                        name="mortgageAmount"
-                                        value={formData.mortgageAmount}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
+                    <div className="stats-card">
+                        <h3>Mortgage Statistics</h3>
+                        <p>Initial Mortgage: ${formData.mortgageAmount.toLocaleString()}</p>
+                        <p>Minimum Weekly Payment: ${parseFloat(calculateMinWeeklyPayment()).toLocaleString()}</p>
+                    </div>
 
-                                <div className="input-group">
-                                    <label>Mortgage Start Date</label>
-                                    <input
-                                        type="date"
-                                        name="mortgageStartDate"
-                                        value={formData.mortgageStartDate}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
+                    <div className="stats-card">
+                        <h3>Investment Statistics</h3>
+                        <p>Current Value: ${formData.currentInvestments.toLocaleString()}</p>
+                        <p>Weekly Investment: ${formData.weeklyInvestment.toLocaleString()}</p>
+                        <p>After-Tax Return Rate: {getAfterTaxRate(formData.investmentRate).toFixed(2)}%</p>
+                    </div>
+                </div>
+            </div>
 
-                                <div className="input-group">
-                                    <label>Average Mortgage Rate (%)</label>
-                                    <input
-                                        type="number"
-                                        name="mortgageRate"
-                                        value={formData.mortgageRate}
-                                        onChange={handleInputChange}
-                                        step="0.01"
-                                    />
-                                </div>
+<div style={{ marginTop: '20px', height: '400px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                            dataKey="year" 
+                            label={{ value: 'Years', position: 'bottom' }} 
+                        />
+                        <YAxis 
+                            label={{ 
+                                value: 'Balance (NZD)', 
+                                angle: -90, 
+                                position: 'insideLeft' 
+                            }} 
+                        />
+                        <Tooltip 
+                            formatter={(value) => `$${value.toLocaleString()}`} 
+                        />
+                        <Legend />
+                        <Line 
+                            type="monotone" 
+                            dataKey="baseMortgage" 
+                            stroke="#ff0000" 
+                            name="Base Mortgage Balance" 
+                        />
+                        <Line 
+                            type="monotone" 
+                            dataKey="extraMortgage" 
+                            stroke="#ff8800" 
+                            name="Mortgage with Extra Payments" 
+                        />
+                        <Line 
+                            type="monotone" 
+                            dataKey="investments" 
+                            stroke="#00ff00" 
+                            name="Index Fund Balance" 
+                        />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
 
-                                <div className="input-group">
-                                    <label>Mortgage Term (Years)</label>
-                                    <input
-                                        type="number"
-                                        name="mortgageTerm"
-                                        value={formData.mortgageTerm}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
+            {showTable && (
+                <div className="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Mortgage Balance</th>
+                                <th>Investment Balance</th>
+                                <th>Net Position</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {chartData.map((data, index) => (
+                                <tr key={index}>
+                                    <td>{data.year}</td>
+                                    <td>${data.baseMortgage.toLocaleString()}</td>
+                                    <td>${data.investments.toLocaleString()}</td>
+                                    <td>${(data.investments - data.baseMortgage).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
 
-                                <div className="input-group">
-                                    <label>Extra Weekly Mortgage Payment (NZD)</label>
-                                    <input
-                                        type="number"
-                                        name="extraMortgagePayment"
-                                        value={formData.extraMortgagePayment}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
+// Render the app
+ReactDOM.render(<FinancialCalculator />, document.getElementById('root'));
+</script>
+</body>
+</html>
 
-                                <h2 className="text-xl font-bold pt-4">Investment Details</h2>
-
-                                <div className="input-group">
-                                    <label>Current Index Fund Value (NZD)</label>
-                                    <input
-                                        type="number"
-                                        name="currentInvestments"
-                                        value={formData.currentInvestments}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-
-                                <div className="input-group">
-                                    <label>Expected Index Fund Return Rate (%)</label>
-                                    <input
-                                        type="number"
-                                        name="investmentRate"
-                                        value={formData.investmentRate}
-                                        onChange={handleInputChange}
-                                        step="0.1"
-                                    />
-                                </div>
-
-                                <div className="input-group">
-                                    <label>PIE Tax Rate (%)</label>
-                                    <input
-                                        type="number"
-                                        name="pieTaxRate"
-                                        value={formData.pieTaxRate}
-                                        onChange={handleInputChange}
-                                        step="0.1"
-                                    />
-                                </div>
-
-                                <div className="input-group">
-                                    <label>Weekly Index Fund Investment (NZD)</label>
-                                    <input
-                                        type="number"
-                                        name="weeklyInvestment"
-                                        value={formData.weeklyInvestment}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                {savedScenarios.length > 0 && (
-                                    <div className="card">
-                                        <h3 className="font-bold mb-2">Saved Scenarios</h3>
-                                        {savedScenarios.map((scenario, index) => (
-                                            <div key={index} className="flex justify-between items-center py-2">
-                                                <span>{scenario.name}</span>
-                                                <button 
-                                                    className="btn"
-                                                    onClick={() => loadScenario(scenario)}
-                                                >
-                                                    Load
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="stats-card">
-                                    <h3 className="font-bold mb-2">Mortgage Statistics</h3>
-                                    <p>Initial Mortgage Amount: ${formData.mortgageAmount.toLocaleString()}</p>
-                                    <p>Minimum Weekly Payment: ${parseFloat(calculateMinWeeklyPayment()).toLocaleString()}</p>
-                                </div>
-
-                                <div className="stats-card">
-                                    <h3 className="font-bold mb-2">Investment Statistics</h3>
-                                    <p>Current Value: ${formData.currentInvestments.toLocaleString()}</p>
-                                    <p>Weekly Investment: ${formData.weeklyInvest
